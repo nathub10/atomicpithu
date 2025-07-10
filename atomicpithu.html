@@ -110,7 +110,7 @@
     <option value="hard">Hard</option>
   </select>
   <button id="startBtn">Start Game</button>
-  <div id="statusBar">Score: 0 | Level: 1</div>
+  <div id="statusBar">Score: 0 | Level: 1 | Time Left: 15s</div>
   <div id="gameCanvas">
     <div id="ball">Z=?</div>
   </div>
@@ -144,7 +144,8 @@
     let currentElement, correctDiv;
     let score = 0;
     let currentLevel = 0;
-    const maxLevel = 5;
+    let timeLeft = 15;
+    let timerInterval;
     let usedIndices = [];
     let difficulty = 'easy';
     let elements = allElements[difficulty];
@@ -201,17 +202,36 @@
       overlay.style.display = "none";
       score = 0;
       currentLevel = 0;
+      startTimer();
       nextLevel();
+    }
+
+    function startTimer() {
+      timeLeft = 15;
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateStatus();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          endGame("⏰ Time's up!");
+        }
+      }, 1000);
+    }
+
+    function updateStatus() {
+      statusBar.textContent = `Score: ${score} | Level: ${currentLevel} | Time Left: ${timeLeft}s`;
     }
 
     function nextLevel() {
       clearCanvas();
-      if (currentLevel === maxLevel) {
-        endGame("🎉 You Win! Atomic Pithu game is a traditional gully game. It helps players learn and engage with chemistry concepts in a fun and interactive way. Made By Shrey Srivastava & Aaradhya - Amity International School, Sector-43, Gurgaon");
+      if (score >= 2) {
+        clearInterval(timerInterval);
+        endGame("🎯 You reached the target score!You Win! Atomic Pithu game is a traditional gully game. It helps players learn and engage with chemistry concepts in a fun and interactive way. Made By Shrey Srivastava & Aaradhya - Amity International School, Sector-43, Gurgaon");
         return;
       }
       currentLevel++;
-      statusBar.textContent = `Score: ${score} | Level: ${currentLevel}`;
+      updateStatus();
 
       let index;
       do {
@@ -260,6 +280,7 @@
             score++;
             nextLevel();
           } else {
+            clearInterval(timerInterval);
             endGame("❌ Wrong Answer!");
           }
         }
