@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atomic Pithu Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #e0f7fa;
+      text-align: center;
+    }
+    h1 {
+      margin: 10px 0;
+      color: #004d40;
+    }
+    #difficultySelect {
+      margin: 10px;
+      padding: 8px 16px;
+      font-size: 16px;
+    }
+    #gameCanvas {
+      position: relative;
+      width: 100vw;
+      height: 80vh;
+      background: linear-gradient(to top, #a7ffeb, #e0f7fa);
+      border: 3px solid #004d40;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .tower {
+      position: absolute;
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: center;
+    }
+    .brick {
+      width: 100px;
+      height: 40px;
+      background: #795548;
+      margin: 1px;
+      border-radius: 3px;
+      font-weight: bold;
+      color: white;
+      text-align: center;
+      line-height: 40px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #ball {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background-color: red;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      border-radius: 50%;
+      bottom: 20px;
+      left: calc(50% - 30px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #startBtn {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background: #00796b;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #statusBar {
+      font-size: 18px;
+      color: #00695c;
+    }
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      z-index: 100;
+    }
+    #overlay button {
+      padding: 10px 20px;
+      margin-top: 20px;
+      font-size: 18px;
+      background: #00bfa5;
+      color: white;
+      border: none;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Atomic Pithu Game</h1>
+  <select id="difficultySelect">
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+  </select>
+  <button id="startBtn">Start Game</button>
+  <div id="statusBar">Score: 0 | Level: 1</div>
+  <div id="gameCanvas">
+    <div id="ball">Z=?</div>
+  </div>
+  <div id="overlay">
+    <div id="resultMessage"></div>
+    <button onclick="startGame()">Play Again</button>
+  </div>
+
+  <script>
+    const allElements = {
+      easy: [
+        { name: "Hydrogen", Z: 1 }, { name: "Helium", Z: 2 },
+        { name: "Lithium", Z: 3 }, { name: "Beryllium", Z: 4 },
+        { name: "Boron", Z: 5 }, { name: "Carbon", Z: 6 },
+        { name: "Nitrogen", Z: 7 }, { name: "Oxygen", Z: 8 }
+      ],
+      medium: [
+        { name: "Sodium", Z: 11 }, { name: "Magnesium", Z: 12 },
+        { name: "Aluminum", Z: 13 }, { name: "Silicon", Z: 14 },
+        { name: "Phosphorus", Z: 15 }, { name: "Sulfur", Z: 16 },
+        { name: "Chlorine", Z: 17 }, { name: "Argon", Z: 18 }
+      ],
+      hard: [
+        { name: "Iron", Z: 26 }, { name: "Nickel", Z: 28 },
+        { name: "Copper", Z: 29 }, { name: "Zinc", Z: 30 },
+        { name: "Gallium", Z: 31 }, { name: "Germanium", Z: 32 },
+        { name: "Arsenic", Z: 33 }, { name: "Selenium", Z: 34 }
+      ]
+    };
+
+    let currentElement, correctDiv;
+    let score = 0;
+    let currentLevel = 0;
+    const maxLevel = 5;
+    let usedIndices = [];
+    let difficulty = 'easy';
+    let elements = allElements[difficulty];
+
+    const canvas = document.getElementById("gameCanvas");
+    const ball = document.getElementById("ball");
+    const statusBar = document.getElementById("statusBar");
+    const overlay = document.getElementById("overlay");
+    const resultMessage = document.getElementById("resultMessage");
+    const startBtn = document.getElementById("startBtn");
+    const difficultySelect = document.getElementById("difficultySelect");
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let isMoving = false;
+    let moveInterval;
+
+    canvas.addEventListener("mousemove", e => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+
+    canvas.addEventListener("click", () => {
+      if (!isMoving) {
+        isMoving = true;
+        moveInterval = setInterval(() => {
+          const ballX = ball.offsetLeft + 30;
+          const ballY = ball.offsetTop + 30;
+          const dx = mouseX - ballX;
+          const dy = mouseY - ballY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 10) {
+            clearInterval(moveInterval);
+            checkIfHit();
+            return;
+          }
+          const angle = Math.atan2(dy, dx);
+          ball.style.left = `${ball.offsetLeft + Math.cos(angle) * 10}px`;
+          ball.style.top = `${ball.offsetTop + Math.sin(angle) * 10}px`;
+        }, 20);
+      }
+    });
+
+    startBtn.onclick = () => {
+      difficulty = difficultySelect.value;
+      elements = [...allElements[difficulty]];
+      usedIndices = [];
+      startGame();
+    };
+
+    function startGame() {
+      startBtn.style.display = "none";
+      overlay.style.display = "none";
+      score = 0;
+      currentLevel = 0;
+      nextLevel();
+    }
+
+    function nextLevel() {
+      clearCanvas();
+      if (currentLevel === maxLevel) {
+        endGame("🎉 You Win! Atomic Pithu game is a traditional gully game. It helps players learn and engage with chemistry concepts in a fun and interactive way. Made By Shrey Srivastava & Aaradhya - Amity International School, Sector-43, Gurgaon");
+        return;
+      }
+      currentLevel++;
+      statusBar.textContent = `Score: ${score} | Level: ${currentLevel}`;
+
+      let index;
+      do {
+        index = Math.floor(Math.random() * elements.length);
+      } while (usedIndices.includes(index));
+      usedIndices.push(index);
+
+      currentElement = elements[index];
+      ball.textContent = `Z=${currentElement.Z}`;
+      createChoices();
+    }
+
+    function createChoices() {
+      const correct = currentElement;
+      const incorrectOptions = elements.filter(e => e.Z !== correct.Z);
+      const randomIncorrects = incorrectOptions.sort(() => 0.5 - Math.random()).slice(0, 3);
+      const choices = [...randomIncorrects, correct].sort(() => 0.5 - Math.random());
+
+      const spacing = canvas.clientWidth / (choices.length + 1);
+      choices.forEach((el, index) => {
+        const div = document.createElement("div");
+        div.className = "brick";
+        div.style.position = "absolute";
+        div.style.bottom = "100px";
+        const leftPos = spacing * (index + 1) - 50;
+        div.style.left = `${leftPos}px`;
+        div.textContent = el.name;
+        div.dataset.correct = el.Z === currentElement.Z;
+        canvas.appendChild(div);
+      });
+    }
+
+    function checkIfHit() {
+      const bricks = canvas.querySelectorAll(".brick");
+      const ballRect = ball.getBoundingClientRect();
+      bricks.forEach(brick => {
+        const rect = brick.getBoundingClientRect();
+        if (
+          ballRect.left < rect.right &&
+          ballRect.right > rect.left &&
+          ballRect.top < rect.bottom &&
+          ballRect.bottom > rect.top
+        ) {
+          const isCorrect = brick.dataset.correct === "true";
+          if (isCorrect) {
+            score++;
+            nextLevel();
+          } else {
+            endGame("❌ Wrong Answer!");
+          }
+        }
+      });
+      isMoving = false;
+    }
+
+    function endGame(msg) {
+      overlay.style.display = "flex";
+      resultMessage.textContent = `${msg} Final Score: ${score}`;
+    }
+
+    function clearCanvas() {
+      ball.style.top = "calc(100% - 70px)";
+      ball.style.left = "calc(50% - 30px)";
+      canvas.querySelectorAll(".brick").forEach(e => e.remove());
+      if (moveInterval) clearInterval(moveInterval);
+      isMoving = false;
+    }
+
+    window.onload = () => {
+      ball.style.top = "calc(100% - 70px)";
+    };
+  </script>
+</body>
+</html>
