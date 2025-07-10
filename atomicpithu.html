@@ -305,5 +305,14 @@
       ball.style.top = "calc(100% - 70px)";
     };
   </script>
+<audio id="bgMusic" src="https://www.bensound.com/bensound-music/bensound-summer.mp3" autoplay loop></audio>
+<script>
+  const bgMusic = document.getElementById("bgMusic");
+  window.addEventListener("click", () => {
+    if (bgMusic.paused) {
+      bgMusic.play();
+    }
+  });
+</script>
 </body>
 </html>
